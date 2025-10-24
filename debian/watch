@@ -1,0 +1,8 @@
+# See uscan(1) for format
+
+# Compulsory line, this is a version 3 file
+version=4
+
+# <Webpage URL> <string match>
+opts=dversionmangle=s/\+?(debian|dfsg|ds|deb)\d*$// \
+https://github.com/camlp5/camlp5/tags .*/rel([0-9]\.[0-9.]+)\.tar\.gz

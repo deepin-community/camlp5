@@ -1,4 +1,45 @@
 #!/usr/bin/make -f
 
+include /usr/share/ocaml/ocamlvars.mk
+
+PKGNAME = camlp5
+
+ifeq ($(OCAML_HAVE_OCAMLOPT),yes)
+DEB_MAKE_BUILD_TARGET = world.opt
+else
+DEB_MAKE_BUILD_TARGET = world
+endif
+
 %:
-	dh $@
+	dh $@ --with ocaml
+
+debian/META: debian/META.src
+	sed 's/@NAME@/$(PKGNAME)/g' < $< > $@
+
+configure-stamp:
+	./configure -mandir /usr/share/man
+	touch $@
+
+override_dh_auto_clean: configure-stamp
+	dh_auto_clean
+	rm -rf doc/html/rss doc/html/*.html
+
+override_dh_auto_configure: configure-stamp
+
+override_dh_auto_build: debian/META
+	$(MAKE) $(DEB_MAKE_BUILD_TARGET)
+	mkdir -p _doc/doc/dvi _doc/doc/pdf _doc/doc/ps _doc/doc/htmlz _doc/doc/info
+	$(MAKE) -C doc/htmlp PAGESROOT=$(CURDIR)/_doc
+	chmod +x debian/camlp5r_w_macro.sh
+
+override_dh_auto_install:
+	$(MAKE) install DESTDIR=$(CURDIR)/debian/tmp
+
+override_dh_ocamldoc:
+	dh_ocamldoc -u -pp,debian/camlp5r_w_macro.sh,-I,+compiler-libs/parsing/
+
+override_dh_ocaml:
+	dh_ocaml --runtime-map camlp5 \
+	  --nodefined-map camlp5:Dynlinkaux,Dynlink,Dynlink_compilerlibs,Dynlink_platform_intf,Dynlink_common,Dynlink_types # temporary hack, should be fixed
+
+override_dh_dwz:
